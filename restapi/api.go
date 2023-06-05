@@ -29,6 +29,7 @@ func RequestDiscord(url, methode, bucket string, payload []byte, wantAnswer bool
 		Url:         url,
 		Methode:     methode,
 		Payload:     payload,
+		WantAnswer:  wantAnswer,
 	}
 
 	addRequest(request)
