@@ -162,7 +162,7 @@ func httpDiscordCall(url, method string, bodyR []byte, wantAnswer bool) ([]byte,
 }
 
 func sleep() {
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 50)
 }
 
 var handlingTimeDiscord = []time.Duration{0}
