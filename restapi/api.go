@@ -210,6 +210,7 @@ func HandleBucket(b Bucket) {
 			internal.LogInfo("handled total request and answered in", time.Since(start).Milliseconds(), "ms, medium: ", MediumValueBOT(), "ms")
 			internal.LogInfo("handled without discord medium:", MediumValueWithoutAPI(), "ms")
 		}
+		sleep()
 	}
 
 }
