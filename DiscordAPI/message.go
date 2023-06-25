@@ -1,11 +1,11 @@
-package restapi
+package DiscordAPI
 
 import (
+	"azginfr/dapi/DiscordInternal"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"test/dapi/internal"
 	"time"
 )
 
@@ -41,10 +41,11 @@ type Embed struct {
 	Fields []EmbedField `json:"fields"`
 }
 
-type MessageFlags int64
+type MessageFlag int64
 
 const (
-	MF_EPHEMERAL MessageFlags = 64
+	MF_EPHEMERAL MessageFlag = 64
+	MF_NO        MessageFlag = 0
 )
 
 type Reaction struct {
@@ -66,40 +67,53 @@ type Reaction struct {
 type MessageSubComponent struct {
 }
 
+const (
+	MessageComponentActionRow = 1 + iota
+	MessageComponentButton
+	MessageComponentStringSelect
+)
+
 type MessageComponent struct {
-	Type       int                `json:"type"`
-	Label      string             `json:"label"`
-	Style      int                `json:"style,omitempty"`
-	CustomId   string             `json:"custom_id,omitempty"`
-	Components []MessageComponent `json:"components,omitempty"`
-	Url        string             `json:"url,omitempty"`
-	Disabled   bool               `json:"disabled,omitempty"`
-	Emoji      string             `json:"emoji,omitempty"`
+	Type        int                `json:"type,omitempty"`
+	Label       string             `json:"label,omitempty"`
+	Style       int                `json:"style,omitempty"`
+	CustomId    string             `json:"custom_id,omitempty"`
+	Components  []MessageComponent `json:"components,omitempty"`
+	Url         string             `json:"url,omitempty"`
+	Disabled    bool               `json:"disabled,omitempty"`
+	Emoji       string             `json:"emoji,omitempty"`
+	Options     []MessageComponent `json:"options,omitempty"`
+	Value       string             `json:"value,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Default     bool               `json:"default,omitempty"`
+	Required    bool               `json:"required,omitempty"`
 }
 
 type MessageCreate struct {
-	Type              int                `json:"type"`
-	Tts               bool               `json:"tts"`
-	Timestamp         time.Time          `json:"timestamp"`
-	ReferencedMessage any                `json:"referenced_message"`
-	Pinned            bool               `json:"pinned"`
-	Nonce             string             `json:"nonce"`
-	Mentions          []any              `json:"mentions"`
-	MentionRoles      []any              `json:"mention_roles"`
-	MentionEveryone   bool               `json:"mention_everyone"`
-	Member            Member             `json:"member"`
-	ID                string             `json:"id"`
-	Flags             MessageFlags       `json:"flags"`
+	Type              int                `json:"type,omitempty"`
+	Tts               bool               `json:"tts,omitempty"`
+	Timestamp         time.Time          `json:"timestamp,omitempty"`
+	ReferencedMessage any                `json:"referenced_message,omitempty"`
+	Pinned            bool               `json:"pinned,omitempty"`
+	Nonce             string             `json:"nonce,omitempty"`
+	Mentions          []any              `json:"mentions,omitempty"`
+	MentionRoles      []any              `json:"mention_roles,omitempty"`
+	MentionEveryone   bool               `json:"mention_everyone,omitempty"`
+	Member            Member             `json:"member,omitempty"`
+	ID                string             `json:"id,omitempty"`
+	Flags             MessageFlag        `json:"flags,omitempty"`
 	Embeds            []Embed            `json:"embeds"`
-	EditedTimestamp   any                `json:"edited_timestamp"`
+	EditedTimestamp   any                `json:"edited_timestamp,omitempty"`
 	Content           string             `json:"content"`
 	Components        []MessageComponent `json:"components"`
-	ChannelID         string             `json:"channel_id"`
-	Author            User               `json:"author"`
-	Attachments       []any              `json:"attachments"`
-	GuildID           string             `json:"guild_id"`
-	Channel           Channel
-	Reactions         []Reaction `json:"reactions"`
+	ChannelID         string             `json:"channel_id,omitempty"`
+	Author            User               `json:"author,omitempty"`
+	Attachments       []interface{}      `json:"attachments"`
+	GuildID           string             `json:"guild_id,omitempty"`
+	Channel           Channel            `json:"channel,omitempty"`
+	Reactions         []Reaction         `json:"reactions,omitempty"`
+	CustomID          string             `json:"custom_id,omitempty"`
+	Title             string             `json:"title,omitempty"`
 }
 
 // DeleteMessage WARNING should use Channel.BulkDeleteMessages if you want to remove more than 1 message
@@ -266,7 +280,7 @@ func (message *MessageCreate) GetReactionUsers(emoji string) ([]User, error) {
 		return usersLists, err
 	}
 
-	internal.LogDebug(response.Body, usersLists)
+	DiscordInternal.LogDebug(response.Body, usersLists)
 
 	return usersLists, nil
 }
@@ -350,7 +364,7 @@ Creates a new thread from an existing message.
 
 Returns a channel on success, and a 400 BAD REQUEST on invalid parameters.
 
-Fires a Thread Create and a Message Update Gateway event.
+Fires a Thread Create and a Message UpdateCommand Gateway event.
 
 When called on a GUILD_TEXT channel, creates a PUBLIC_THREAD.
 

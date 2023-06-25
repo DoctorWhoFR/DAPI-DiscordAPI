@@ -1,4 +1,4 @@
-package restapi
+package DiscordAPI
 
 import (
 	"encoding/json"

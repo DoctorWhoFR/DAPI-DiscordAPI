@@ -1,10 +1,10 @@
-package restapi
+package DiscordAPI
 
 import (
+	"azginfr/dapi/DiscordInternal"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"test/dapi/internal"
 	"time"
 )
 
@@ -70,8 +70,8 @@ func (content Member) AddRole(guildID, roleID string) bool {
 	response := <-answer
 
 	if response.Res.StatusCode >= 300 {
-		internal.LogDebug(request, response)
-		internal.LogDebug("error adding role")
+		DiscordInternal.LogDebug(request, response)
+		DiscordInternal.LogDebug("error adding role")
 		return false
 	}
 

@@ -1,10 +1,11 @@
-package internal
+package DiscordInternal
 
 import (
-	"github.com/fatih/color"
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/fatih/color"
 )
 
 var logLevel int
@@ -37,6 +38,20 @@ func GetEnvLogLevel() {
 
 }
 
+// LogTrace
+// DONE big refactoring needed for logging
+// need more readable logging, and less
+// ```
+// test
+// ```
+// - ${line}
+// - ${fullPath}
+// - [x] test
+// - [ ] test
+// - [ ] test
+// - [x] test
+// - [x] test
+// <!-- epic:"debugging" #tag @1.0.1 order:0 completed:2023-06-22T18:46:48.383Z -->
 func LogTrace(args ...any) {
 	if logLevel <= loglevelTrace {
 		log.Println(color.New(color.FgCyan).Add(color.Underline).Sprintf("[%s]", "TRACE"), args)

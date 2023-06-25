@@ -1,11 +1,16 @@
-package restapi
+package DiscordAPI
 
 import (
+	"azginfr/dapi/DiscordInternal"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
-	"test/dapi/internal"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -181,6 +186,9 @@ func (content *Channel) DeleteChannel() error {
 	return nil
 }
 
+/*
+PostMessage
+*/
 func (content *Channel) PostMessage(message *MessageCreate) error {
 	body, _ := json.Marshal(message)
 
@@ -199,7 +207,69 @@ func (content *Channel) PostMessage(message *MessageCreate) error {
 		return errors.New("can't  based on discord error: " + string(answer.Body))
 	}
 
-	internal.LogTrace("new message", message, "response message", string(answer.Body))
+	DiscordInternal.LogTrace("new message", message, "response message", string(answer.Body))
+
+	message.Channel = *content
+
+	return nil
+}
+
+func (content *Channel) PostMessageImage(message *MessageCreate, file string) error {
+	messageJson, err := json.Marshal(message)
+
+	if err != nil {
+		panic(err)
+	}
+
+	fileContent, err := os.Open(file)
+	if err != nil {
+		panic(err)
+		return err
+	}
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+
+	part1, _ := writer.CreateFormFile("files[0]", filepath.Base(fileContent.Name()))
+	_, _ = io.Copy(part1, fileContent)
+	_ = writer.WriteField("payload_json", string(messageJson))
+	err = writer.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = fileContent.Close()
+	if err != nil {
+		return err
+	}
+
+	go func(f *os.File) {
+		timer1 := time.NewTimer(5 * time.Second)
+		<-timer1.C
+		err := os.Remove(f.Name())
+		if err != nil {
+			panic(err)
+			return
+		}
+		fmt.Println("Timer 2 fired")
+	}(fileContent)
+
+	answer := RequestDiscordForm("/channels/"+content.ID+"/messages", http.MethodPost, "channels", messageJson, true, payload, writer.FormDataContentType())
+
+	if answer.Err != nil {
+		return errors.New("can't  based on technical error" + answer.Err.Error())
+	}
+
+	err = json.Unmarshal(answer.Body, &message)
+	if err != nil {
+		return err
+	}
+
+	if answer.Res.StatusCode > http.StatusResetContent {
+		return errors.New("can't  based on discord error: " + string(answer.Body))
+	}
+
+	DiscordInternal.LogTrace("new message", message, "response message", string(answer.Body))
 
 	message.Channel = *content
 
@@ -271,7 +341,7 @@ func (content *Channel) GetMessage(messageID string) (MessageCreate, error) {
 	}
 	message.Channel = *content
 
-	internal.LogTrace("get message", message, "response message", string(answer.Body))
+	DiscordInternal.LogTrace("get message", message, "response message", string(answer.Body))
 
 	return message, nil
 }
@@ -303,7 +373,7 @@ func (content *Channel) GetAllMessages(limit string) ([]MessageCreate, error) {
 		return []MessageCreate{}, errors.New("can't  based on discord error: " + string(answer.Body))
 	}
 
-	internal.LogTrace("get message", messages, "response message", string(answer.Body))
+	DiscordInternal.LogTrace("get message", messages, "response message", string(answer.Body))
 
 	return messages, nil
 }
@@ -418,7 +488,7 @@ func (content *Channel) StartThread(thread StartThreadPayload) (Channel, error) 
 JoinThreads
 Join Thread
 PUT/channels/{channel.id}/thread-members/@me
-Adds the current user to a thread. Also requires the thread is not archived. Returns a 204 empty response on success. Fires a Thread Members Update and a Thread Create Gateway event.
+Adds the current user to a thread. Also requires the thread is not archived. Returns a 204 empty response on success. Fires a Thread Members UpdateCommand and a Thread Create Gateway event.
 */
 func (content *Channel) JoinThreads() error {
 	answer := RequestDiscord(fmt.Sprintf("/channels/%s/thread-members/@me", content.ID), http.MethodPut, "channels", nil, false)
@@ -440,7 +510,7 @@ Leave Thread
 DELETE/channels/{channel.id}/thread-members/@me
 Removes the current user from a thread.
 Also requires the thread is not archived.
-Returns a 204 empty response on success. Fires a Thread Members Update Gateway event.
+Returns a 204 empty response on success. Fires a Thread Members UpdateCommand Gateway event.
 */
 func (content *Channel) LeaveThreads() error {
 	answer := RequestDiscord(fmt.Sprintf("/channels/%s/thread-members/@me", content.ID), http.MethodDelete, "channels", nil, false)
@@ -463,7 +533,7 @@ PUT/channels/{channel.id}/thread-members/{user.id}
 Adds another member to a thread.
 Requires the ability to send messages in the thread. Also requires the thread is not archived.
 Returns a 204 empty response if the member is successfully added or was already a member of the thread.
-Fires a Thread Members Update Gateway event.
+Fires a Thread Members UpdateCommand Gateway event.
 */
 func (content *Channel) AddThreadMember(memberId string) error {
 	answer := RequestDiscord(fmt.Sprintf("/channels/%s/thread-members/%s", content.ID, memberId), http.MethodPut, "channels", nil, false)
@@ -486,7 +556,7 @@ DELETE/channels/{channel.id}/thread-members/{user.id}
 Removes another member from a thread.
 Requires the MANAGE_THREADS permission, or the creator of the thread if it is a PRIVATE_THREAD.
 Also requires the thread is not archived. Returns a 204 empty response on success.
-Fires a Thread Members Update Gateway event.
+Fires a Thread Members UpdateCommand Gateway event.
 */
 func (content *Channel) DeleteThreadMember(memberId string) error {
 	answer := RequestDiscord(fmt.Sprintf("/channels/%s/thread-members/%s", content.ID, memberId), http.MethodDelete, "channels", nil, false)
