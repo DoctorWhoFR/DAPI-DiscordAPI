@@ -197,7 +197,7 @@ func httpDiscordCallFormData(url, method string, wantAnswer bool, body *bytes.Bu
 
 	splitted := strings.Split(url, "/")
 
-	_bucket := GlobalDiscordBuckets.findBucket(splitted[1], method)
+	_bucket := FindBucket(splitted[1], method)
 
 	if _bucket.Blocked {
 		until := time.Until(_bucket.ResetTime)
@@ -238,7 +238,7 @@ func httpDiscordCallFormData(url, method string, wantAnswer bool, body *bytes.Bu
 	if res.StatusCode == 429 {
 		timeout++
 		_bucket.lockBucket()
-		GlobalDiscordBuckets.saveBucket(_bucket)
+		SaveBucket(_bucket)
 		return httpDiscordCallFormData(url, method, wantAnswer, body, contentHeader)
 	}
 
@@ -260,7 +260,7 @@ func httpDiscordCallFormData(url, method string, wantAnswer bool, body *bytes.Bu
 
 	DiscordInternal.LogInfo("TIMEOUT >", timeout)
 
-	GlobalDiscordBuckets.saveBucket(_bucket)
+	SaveBucket(_bucket)
 
 	return responseBody, &res, err
 }
@@ -287,7 +287,7 @@ func httpDiscordCallJson(DiscordEndpoint, DiscordMethod string, DiscordPayload [
 
 	payload := bytes.NewReader(DiscordPayload)
 
-	_bucket := GlobalDiscordBuckets.findBucket(splitted[1], DiscordMethod)
+	_bucket := FindBucket(splitted[1], DiscordMethod)
 
 	if _bucket.Blocked {
 		until := time.Until(_bucket.ResetTime)
@@ -328,7 +328,7 @@ func httpDiscordCallJson(DiscordEndpoint, DiscordMethod string, DiscordPayload [
 	if res.StatusCode == 429 {
 		timeout++
 		_bucket.lockBucket()
-		GlobalDiscordBuckets.saveBucket(_bucket)
+		SaveBucket(_bucket)
 		return httpDiscordCallJson(DiscordEndpoint, DiscordMethod, DiscordPayload, wantAnswer)
 	}
 
@@ -351,7 +351,7 @@ func httpDiscordCallJson(DiscordEndpoint, DiscordMethod string, DiscordPayload [
 
 	DiscordInternal.LogInfo("TIMEOUT >", timeout)
 
-	GlobalDiscordBuckets.saveBucket(_bucket)
+	SaveBucket(_bucket)
 
 	return body, &res, err
 }
@@ -365,19 +365,19 @@ If no goroutine is find wait a simple time, using DiscordInternal.SimpleSleep
 */
 func NewBucketHandler() ([]byte, *http.Response) {
 	for {
-		if len(GlobalDiscordBuckets) == 0 {
-			DiscordInternal.SimpleSleep()
-			continue
-		}
+		GlobalDiscordBuckets.Range(func(key, value any) bool {
+			v := value.(Bucket)
 
-		for _, v := range GlobalDiscordBuckets {
 			if !v.IsHandled {
+
 				go HandleBucketRequest(v)
 				v.handled()
-				v.save(GlobalDiscordBuckets)
+				SaveBucket(v)
+
 				DiscordInternal.LogDebug("Handing new bucket", v.Index, v.Method)
 			}
-		}
+			return false
+		})
 		DiscordInternal.SimpleSleep()
 	}
 }

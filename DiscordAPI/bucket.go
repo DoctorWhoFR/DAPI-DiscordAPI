@@ -5,31 +5,29 @@ import (
 	"bytes"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
-type BucketLists map[string]Bucket
+var GlobalDiscordBuckets = sync.Map{}
 
-var GlobalDiscordBuckets = make(BucketLists, 0)
-
-func (bucketsList BucketLists) findBucket(Route, Method string) Bucket {
+func FindBucket(Route, Method string) Bucket {
 	splitted := strings.Split(Route, "/")
-
-	bucket, found := bucketsList[splitted[0]+Method]
+	bucketKey := splitted[0] + Method
+	bucket, found := GlobalDiscordBuckets.Load(bucketKey)
 
 	if !found {
-		_bucket := Bucket{Route: Route, Method: Method, Requests: map[*chan BucketRequestAnswer]BucketRequest{}, Key: splitted[0] + Method}
-		_bucket.Index = len(GlobalDiscordBuckets) + 1
-		GlobalDiscordBuckets[Route+Method] = _bucket
+		_bucket := Bucket{Route: Route, Method: Method, Requests: map[*chan BucketRequestAnswer]BucketRequest{}, Key: bucketKey}
+		GlobalDiscordBuckets.Store(Route+Method, _bucket)
 
 		return _bucket
 	}
 
-	return bucket
+	return bucket.(Bucket)
 }
 
-func (bucketsList BucketLists) saveBucket(b Bucket) {
-	bucketsList[b.Key] = b
+func SaveBucket(b Bucket) {
+	GlobalDiscordBuckets.Store(b.Key, b)
 }
 
 // BucketRequestAnswer is a specif type used in a chan, to make easier to the client to get his response
@@ -67,10 +65,6 @@ type Bucket struct {
 	BucketID  string
 }
 
-func (b *Bucket) save(bl BucketLists) {
-	bl[b.Key] = *b
-}
-
 func (b *Bucket) unLockBucket() {
 	b.Blocked = false
 	DiscordInternal.LogDebug("UNLOCKING BUCKET", b.Method)
@@ -88,9 +82,9 @@ func (b *Bucket) handled() {
 // Add a discord api request into the discord handler
 // should send an BucketRequest containing a valid chan BucketRequestAnswer
 func addRequest(br BucketRequest) {
-	_bucket := GlobalDiscordBuckets.findBucket(br.BucketName, br.Methode)
+	_bucket := FindBucket(br.BucketName, br.Methode)
 	_bucket.Requests[&br.AnswerQueue] = br
-	GlobalDiscordBuckets.saveBucket(_bucket)
+	SaveBucket(_bucket)
 }
 
 /*

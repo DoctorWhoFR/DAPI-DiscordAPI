@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"time"
 )
 
 /*
@@ -71,6 +72,8 @@ func ConnectBot() {
 	DiscordInternal.LogDebug("sent auth, start commandHandler and DiscordEvents handler, also as main handler")
 
 	go DiscordAPI.NewBucketHandler()
+
+	time.Sleep(time.Second)
 
 	go DiscordEvent.MainEventHandler()
 

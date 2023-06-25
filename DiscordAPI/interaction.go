@@ -73,8 +73,6 @@ func (interaction *InteractionBase) InteractionResponseEdit(message MessageCreat
 	response := <-answer
 
 	if response.Res.StatusCode >= 300 {
-		log.Println(string(response.Body))
-		log.Println(string(jsonned))
 		return errors.New("not an 2xx response")
 	}
 
