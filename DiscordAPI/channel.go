@@ -244,14 +244,13 @@ func (content *Channel) PostMessageImage(message *MessageCreate, file string) er
 	}
 
 	go func(f *os.File) {
-		timer1 := time.NewTimer(5 * time.Second)
+		timer1 := time.NewTimer(DiscordInternal.FileDelete)
 		<-timer1.C
 		err := os.Remove(f.Name())
 		if err != nil {
 			panic(err)
 			return
 		}
-		fmt.Println("Timer 2 fired")
 	}(fileContent)
 
 	answer := RequestDiscordForm("/channels/"+content.ID+"/messages", http.MethodPost, "channels", messageJson, true, payload, writer.FormDataContentType())

@@ -22,7 +22,7 @@ Example :
 		// login to discord & start everything
 		go DiscordClient.ConnectBot()
 
-		DiscordEvent.AddDiscordCommand(commands.RegisterCommandDiscord())
+		DiscordEvent.AddDiscordCommand(BotCommands.RegisterCommandDiscord())
 	}
 
 // TODO add parameter token to ConnectBot function
@@ -45,8 +45,8 @@ func ConnectBot() {
 
 	var err2 error
 
-	// Create a new WebSocket connection to the Gateway
-	DiscordEvent.WebSocket, _, err2 = websocket.DefaultDialer.Dial(gatewayURL, nil)
+	// Create a new DiscordWebSocket connection to the Gateway
+	DiscordEvent.DiscordWebSocket, _, err2 = websocket.DefaultDialer.Dial(gatewayURL, nil)
 	if err2 != nil {
 		log.Fatal(err2)
 	}
@@ -66,10 +66,10 @@ func ConnectBot() {
 			},
 		},
 	}
-	if err := DiscordEvent.WebSocket.WriteJSON(payload); err != nil {
+	if err := DiscordEvent.DiscordWebSocket.WriteJSON(payload); err != nil {
 		log.Fatal(err)
 	}
-	DiscordInternal.LogDebug("sent auth, start commandHandler and DiscordEvents handler, also as main handler")
+	DiscordInternal.LogDebug("sent auth, start commandHandler and BotEvents handler, also as main handler")
 
 	go DiscordAPI.NewBucketHandler()
 

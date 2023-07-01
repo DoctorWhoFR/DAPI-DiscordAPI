@@ -33,7 +33,7 @@ var timeout int
 /*
 fakeHTTPResponse
 
-Basic in-build internal function to simply generate a new fake http.Response for error handling purpose in other function.
+Basic in-build BotInternal function to simply generate a new fake http.Response for error handling purpose in other function.
 */
 func fakeHTTPResponse() *http.Response {
 	var response *http.Response      // Declare a pointer to http.Response

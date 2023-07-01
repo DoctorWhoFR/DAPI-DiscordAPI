@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var WebSocket *websocket.Conn
+var DiscordWebSocket *websocket.Conn
 
 const (
 	OP_DISPATCH      = 0 // DISPATCH TYPE
@@ -22,18 +22,19 @@ const (
 )
 
 /*
-GatewayMessage
+DiscordGatewayMessage
 
 Representation of a discord gateway message
 */
-type GatewayMessage struct {
+type DiscordGatewayMessage struct {
 	OpCode int             `json:"op"`
 	Data   json.RawMessage `json:"d"`
 	Type   string          `json:"t"`
 	Seq    int             `json:"s"`
 }
 
-// SendHeartbeats Currently Sending heartbeats discord.
+// SendHeartbeats
+// Currently Sending heartbeats to discord.
 //   - Seed the random number generator with the current time.
 //   - Generate a random number between 0 and 1.
 //   - Wait for heartbeat interval : `time.Duration(float64(interval)*r) * time.Millisecond`
@@ -65,7 +66,7 @@ func SendHeartbeats(ws *websocket.Conn, interval int) {
 }
 
 // HandleGatewayMessage
-func HandleGatewayMessage(msg GatewayMessage) {
+func HandleGatewayMessage(msg DiscordGatewayMessage) {
 	DiscordInternal.LogTrace("Handling message", msg.OpCode)
 	switch msg.OpCode {
 	case OP_HELLO:
@@ -79,7 +80,7 @@ func HandleGatewayMessage(msg GatewayMessage) {
 		}
 
 		// Start sending heartbeat messages to the Gateway
-		go SendHeartbeats(WebSocket, payload.HeartbeatInterval)
+		go SendHeartbeats(DiscordWebSocket, payload.HeartbeatInterval)
 	case OP_HERTHBEAT_ACK:
 		DiscordInternal.LogTrace("ack hearthbeat")
 		// Gateway acknowledged our last heartbeat message
@@ -136,19 +137,22 @@ func HandleGatewayMessage(msg GatewayMessage) {
 				go HandlerInteractionModalSubmit(interaction)
 			}
 		default:
-			marshalJSON, err := msg.Data.MarshalJSON()
-			if err != nil {
-				DiscordInternal.LogTrace(err)
-			}
+			saveEventActivated := os.Getenv("SAVE_EVENT")
 			DiscordInternal.LogTrace("no event handler for", msg.Type)
 
-			err = os.WriteFile("./data/"+msg.Type+".json", marshalJSON, 0644)
-			if err != nil {
-				DiscordInternal.LogError("cant SaveCommand file for type", msg.Type)
-				return
+			if saveEventActivated == "1" {
+				marshalJSON, err := msg.Data.MarshalJSON()
+				if err != nil {
+					DiscordInternal.LogTrace(err)
+				}
+
+				err = os.WriteFile("./data/"+msg.Type+".json", marshalJSON, 0644)
+				if err != nil {
+					DiscordInternal.LogError("cant SaveCommand file for type", msg.Type)
+					return
+				}
 			}
 		}
-
 	}
 }
 
@@ -161,9 +165,9 @@ func MainEventHandler() {
 	defer close(done)
 
 	for {
-		var msg GatewayMessage
+		var msg DiscordGatewayMessage
 
-		if err := WebSocket.ReadJSON(&msg); err != nil {
+		if err := DiscordWebSocket.ReadJSON(&msg); err != nil {
 			DiscordInternal.LogTrace(err)
 			return
 		}

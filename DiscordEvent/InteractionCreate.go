@@ -70,7 +70,7 @@ func (command *DiscordCommand) SaveCommand() error {
 		DiscordInternal.LogDebug("error creating command", err)
 	}
 
-	response := DiscordAPI.RequestDiscord("/applications/1106890236757278770/commands", "POST", "applications", body, false)
+	response := DiscordAPI.RequestDiscord("/applications/1106890236757278770/BotCommands", "POST", "applications", body, false)
 
 	if response.Res.StatusCode >= 300 {
 		DiscordInternal.LogError(response)
@@ -86,7 +86,7 @@ func (command *DiscordCommand) UpdateCommand(commandId string) error {
 		DiscordInternal.LogDebug("error creating command", err)
 	}
 
-	response := DiscordAPI.RequestDiscord("applications/1106890236757278770/commands/"+commandId, "PATCH", "applications", body, false)
+	response := DiscordAPI.RequestDiscord("applications/1106890236757278770/BotCommands/"+commandId, "PATCH", "applications", body, false)
 
 	if response.Res.StatusCode >= 300 {
 		DiscordInternal.LogDebug("log")
@@ -125,8 +125,8 @@ func AddDiscordCommand(command BotCommand) {
 		return
 	}
 
-	// Get alls actuals commands
-	answer := DiscordAPI.RequestDiscord("/applications/1106890236757278770/commands", "GET", "applications", nil, true)
+	// Get alls actuals BotCommands
+	answer := DiscordAPI.RequestDiscord("/applications/1106890236757278770/BotCommands", "GET", "applications", nil, true)
 
 	var commands []DiscordCommand
 

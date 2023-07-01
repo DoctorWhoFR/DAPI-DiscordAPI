@@ -1,6 +1,7 @@
 package DiscordAPI
 
 import (
+	"azginfr/dapi/DiscordInternal"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -106,14 +107,13 @@ func (interaction *InteractionBase) InteractionResponseEditImage(message Message
 	}
 
 	go func(f *os.File) {
-		timer1 := time.NewTimer(5 * time.Second)
+		timer1 := time.NewTimer(DiscordInternal.FileDelete)
 		<-timer1.C
 		err := os.Remove(f.Name())
 		if err != nil {
 			panic(err)
 			return
 		}
-		fmt.Println("Timer 2 fired")
 	}(fileContent)
 
 	RequestDiscordForm("/webhooks/"+interaction.ApplicationID+"/"+interaction.Token+"/messages/@original", http.MethodPatch, "webhooks", jsonned, false, payload, writer.FormDataContentType())
@@ -147,14 +147,13 @@ func (interaction *InteractionBase) InteractionResponseImage(interactionPayload 
 	}
 
 	go func(f *os.File) {
-		timer1 := time.NewTimer(5 * time.Second)
+		timer1 := time.NewTimer(DiscordInternal.FileDelete)
 		<-timer1.C
 		err := os.Remove(f.Name())
 		if err != nil {
 			panic(err)
 			return
 		}
-		fmt.Println("Timer 2 fired")
 	}(fileContent)
 
 	answer := RequestDiscordForm("/interactions/"+interaction.ID+"/"+interaction.Token+"/callback", http.MethodPost, "interactions", jsonned, false, payload, writer.FormDataContentType())
@@ -167,12 +166,10 @@ func (interaction *InteractionBase) InteractionResponseImage(interactionPayload 
 }
 
 func (interaction *InteractionBase) InteractionResponse(interactionPayload InteractionResponsePayload) error {
-	start := time.Now()
 	jsonned, _ := json.Marshal(interactionPayload)
 
 	answer := RequestDiscord("/interactions/"+interaction.ID+"/"+interaction.Token+"/callback", http.MethodPost, "interactions", jsonned, false)
 
-	log.Println("testing", time.Since(start))
 	if answer.Res.StatusCode > 204 {
 		return errors.New("not an sss2xx response")
 	}

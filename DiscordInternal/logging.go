@@ -4,9 +4,12 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/fatih/color"
 )
+
+const FileDelete = time.Second
 
 var logLevel int
 
